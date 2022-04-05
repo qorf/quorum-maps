@@ -1,0 +1,81 @@
+use Libraries.Containers.Array
+use Libraries.Containers.Support.Pair
+class Feature
+    text name = ""
+    Array<Array<Pair<number>>> geometry = undefined
+
+    action GetName returns text
+        return name
+    end
+
+    action SetName(text name)
+        me:name = name
+    end
+
+    action GetGeometry returns Array<Array<Pair<number>>>
+        return geometry
+    end
+
+    action SetGeometry(Array<Array<Pair<number>>> geometry)
+        me:geometry = geometry
+    end
+
+    action WriteToQuorumClass returns text
+        text dq = ""
+        dq = dq:GetDoubleQuote()
+        text result = 
+"package Libraries.Interface.Controls.Charts.Maps.Countries.US.States
+use Libraries.Containers.Support.Pair
+use Libraries.Containers.Array
+
+class " + name + " 
+    text name = " + dq + name + dq + "
+
+"
+        if geometry not= undefined
+            result = result + 
+"    Array<Array<Pair<number>>> geometry
+    action GetPair(number x, number y) returns Pair<number>
+        Pair<number> pair
+        pair:Set(x,y)
+        return pair
+    end
+
+    action GetGeometry returns Array<Array<Pair<number>>>
+        return geometry
+    end
+
+    action FillGeometry"
+
+            //now fill it with points
+            i = 0
+            repeat while i < geometry:GetSize()
+                text name = "pairs" + i
+                Array<Pair<number>> pairs = geometry:Get(i)
+                result = result + "
+       Array<Pair<number>> " + name
+                j = 0
+                repeat while j < pairs:GetSize()
+                    Pair<number> pair = pairs:Get(j)
+                    result = result + "
+" + "       " + name + ":Add(GetPair(" + pair:GetFirstValue() + "," + pair:GetSecondValue() + "))"
+                    j = j + 1
+                end
+
+                result = result + "
+        geometry:Add(" + name + ")"
+        
+                i = i + 1
+            end
+            result = result + "
+    end
+"
+        end
+
+        result = result + "
+end"
+
+        return result
+    end
+
+end

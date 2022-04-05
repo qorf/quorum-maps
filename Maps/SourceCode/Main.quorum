@@ -1,0 +1,147 @@
+use Libraries.System.File
+use Libraries.Data.Formats.JavaScriptObjectNotation
+use Libraries.Containers.Support.Pair
+use Libraries.Containers.Array
+class Main
+    Array<Feature> features
+    Feature feature
+    action Main
+        LoadData("json/gz_2010_us_040_00_500k.json")
+    end
+
+    action LoadData(text value)
+        File file
+        file:SetPath(value)
+        JavaScriptObjectNotation note
+        note:Read(file)
+
+        i = 0
+        repeat while i < note:GetSize()
+            JavaScriptObjectNotation n = note:Get(i)
+
+            if n:GetKey() = "features"
+                ProcessFeatures(n)
+            end
+            i = i + 1
+        end
+
+        //just for testing, print out all the states
+        i = 0
+        repeat while i < features:GetSize()
+            Feature f = features:Get(i)
+            text clazz = f:WriteToQuorumClass()
+            File state
+            state:SetPath("states/" + f:GetName() + ".quorum")
+            state:CreateDirectories()
+            if state:Exists()
+                state:Delete()
+            end
+
+            state:Write(clazz)
+            i = i + 1
+        end
+    end
+
+    action ProcessFeatures(JavaScriptObjectNotation features)
+        i = 0
+        repeat while i < features:GetSize()
+            JavaScriptObjectNotation state = features:Get(i)
+            ProcessState(state)
+            i = i + 1
+        end
+    end
+
+    action ProcessState(JavaScriptObjectNotation state)
+        i = 0
+        repeat while i < state:GetSize()
+            JavaScriptObjectNotation prop = state:Get(i)
+            if prop:GetKey() = "properties"
+                ReadProperties(prop)
+            elseif prop:GetKey() = "geometry"
+                Array<Array<Pair<number>>> geometry = ReadGeometry(prop)
+                feature:SetGeometry(geometry)
+                features:Add(feature)
+
+                //we are done reading this state. Read a new one.
+                Feature feat
+                feature = feat
+            end
+            i = i + 1
+        end
+    end
+
+    action ReadProperties(JavaScriptObjectNotation properties)
+        i = 0
+        repeat while i < properties:GetSize()
+            JavaScriptObjectNotation prop = properties:Get(i)
+            if prop:GetKey() = "NAME"
+                text name = prop:GetText()
+                feature:SetName(name)
+            end
+            i = i + 1
+        end
+    end
+
+    action ReadGeometry(JavaScriptObjectNotation geometry) returns Array<Array<Pair<number>>>
+        Array<Array<Pair<number>>> geometryArray
+        i = 0
+        boolean multi = false
+        repeat while i < geometry:GetSize()
+            JavaScriptObjectNotation prop = geometry:Get(i)
+            if prop:GetKey() = "type"
+                text type = prop:GetText()
+                if type = "Polygon"
+                    multi = false
+                elseif type = "MultiPolygon"
+                    multi = true
+                else
+                    multi = false
+                end
+                
+            elseif prop:GetKey() = "coordinates"
+                if multi
+                    //read each part of the array separately
+                    j = 0
+                    repeat while j < prop:GetSize()
+                        
+                        Array<Pair<number>> pairs = ReadCoordinates(prop)
+                        geometryArray:Add(pairs)
+                        j = j + 1
+                    end
+                else
+                    Array<Pair<number>> pairs = ReadCoordinates(prop)
+                    geometryArray:Add(pairs)
+                end
+            end
+            i = i + 1
+        end
+
+        return geometryArray
+    end
+
+    action ReadCoordinates(JavaScriptObjectNotation coordinates) returns Array<Pair<number>>
+        Array<Pair<number>> pairs
+        Pair<number> pair
+        boolean isX = true
+        number x = 0
+        number y = 0
+        i = 0
+        repeat while i < coordinates:GetSize()
+            JavaScriptObjectNotation prop = coordinates:Get(i)
+            if isX
+                x = prop:GetNumber()
+                isX = false
+            else
+                isX = true
+                y = prop:GetNumber()
+                pair:Set(x,y)
+                pairs:Add(pair)
+                Pair<number> newPair
+                pair = newPair
+            end
+            i = i + 1
+        end
+
+        return pairs
+    end
+end
