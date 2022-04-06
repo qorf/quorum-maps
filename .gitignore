@@ -1,4 +1,4 @@
 Build/
 Run/
 states/
-.DS_Store
+*.DS_Store

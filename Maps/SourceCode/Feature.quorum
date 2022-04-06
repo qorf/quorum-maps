@@ -9,7 +9,7 @@ class Feature
     end
 
     action SetName(text name)
-        me:name = name
+        me:name = name:Replace(" ", "")
     end
 
     action GetGeometry returns Array<Array<Pair<number>>>
@@ -63,13 +63,12 @@ class " + name + "
                 end
 
                 result = result + "
-        geometry:Add(" + name + ")"
+       geometry:Add(" + name + ")"
         
                 i = i + 1
             end
             result = result + "
-    end
-"
+    end"
         end
 
         result = result + "

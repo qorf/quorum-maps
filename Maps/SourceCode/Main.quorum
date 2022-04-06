@@ -7,6 +7,7 @@ class Main
     Feature feature
     action Main
         LoadData("json/gz_2010_us_040_00_500k.json")
+        output "Finished"
     end
 
     action LoadData(text value)
@@ -43,9 +44,10 @@ class Main
     end
 
     action ProcessFeatures(JavaScriptObjectNotation features)
+        JavaScriptObjectNotation theStates = features:Get(0)
         i = 0
-        repeat while i < features:GetSize()
-            JavaScriptObjectNotation state = features:Get(i)
+        repeat while i < theStates:GetSize()
+            JavaScriptObjectNotation state = theStates:Get(i)
             ProcessState(state)
             i = i + 1
         end
@@ -83,7 +85,7 @@ class Main
     end
 
     action ReadGeometry(JavaScriptObjectNotation geometry) returns Array<Array<Pair<number>>>
-        Array<Array<Pair<number>>> geometryArray
+        Array<Array<Pair<number>>> geometryArray = undefined
         i = 0
         boolean multi = false
         repeat while i < geometry:GetSize()
@@ -101,16 +103,9 @@ class Main
             elseif prop:GetKey() = "coordinates"
                 if multi
                     //read each part of the array separately
-                    j = 0
-                    repeat while j < prop:GetSize()
-                        
-                        Array<Pair<number>> pairs = ReadCoordinates(prop)
-                        geometryArray:Add(pairs)
-                        j = j + 1
-                    end
+                    geometryArray = ReadMultiCoordinates(prop)
                 else
-                    Array<Pair<number>> pairs = ReadCoordinates(prop)
-                    geometryArray:Add(pairs)
+                    geometryArray = ReadCoordinates(prop)
                 end
             end
             i = i + 1
@@ -119,29 +114,89 @@ class Main
         return geometryArray
     end
 
-    action ReadCoordinates(JavaScriptObjectNotation coordinates) returns Array<Pair<number>>
-        Array<Pair<number>> pairs
-        Pair<number> pair
+    action ReadMultiCoordinates(JavaScriptObjectNotation coordinates) returns Array<Array<Pair<number>>>
+        Array<Array<Pair<number>>> islands
         boolean isX = true
         number x = 0
         number y = 0
+        JavaScriptObjectNotation starting = coordinates:Get(0)
         i = 0
-        repeat while i < coordinates:GetSize()
-            JavaScriptObjectNotation prop = coordinates:Get(i)
-            if isX
-                x = prop:GetNumber()
-                isX = false
-            else
-                isX = true
-                y = prop:GetNumber()
-                pair:Set(x,y)
-                pairs:Add(pair)
-                Pair<number> newPair
-                pair = newPair
+        repeat while i < starting:GetSize()
+            JavaScriptObjectNotation prop = starting:Get(i)
+
+            j = 0
+            repeat while j < prop:GetSize()
+                JavaScriptObjectNotation coordPairs = prop:Get(j)
+                Array<Pair<number>> island
+                k = 0
+                repeat while k < coordPairs:GetSize()
+                    JavaScriptObjectNotation p = coordPairs:Get(k)
+
+                    Pair<number> pair
+                    l = 0
+                    repeat while l < p:GetSize()
+                        JavaScriptObjectNotation value = p:Get(l)
+                        if isX
+                            x = value:GetNumber()
+                            isX = false
+                        else
+                            isX = true
+                            y = value:GetNumber()
+                            pair:Set(x,y)
+                        end
+                        l = l + 1
+                    end
+
+                    island:Add(pair)
+                    k = k + 1
+                end
+
+                islands:Add(island)
+                j = j + 1
             end
             i = i + 1
         end
 
-        return pairs
+        return islands
+    end
+
+    action ReadCoordinates(JavaScriptObjectNotation coordinates) returns Array<Array<Pair<number>>>
+        Array<Array<Pair<number>>> islands
+        boolean isX = true
+        number x = 0
+        number y = 0
+        JavaScriptObjectNotation starting = coordinates:Get(0)
+        i = 0
+        repeat while i < starting:GetSize()
+            JavaScriptObjectNotation prop = starting:Get(i)
+            Array<Pair<number>> island
+            k = 0
+            repeat while k < prop:GetSize()
+                JavaScriptObjectNotation p = prop:Get(k)
+
+                Pair<number> pair
+                l = 0
+                repeat while l < p:GetSize()
+                    JavaScriptObjectNotation value = p:Get(l)
+                    if isX
+                        x = value:GetNumber()
+                        isX = false
+                    else
+                        isX = true
+                        y = value:GetNumber()
+                        pair:Set(x,y)
+                    end
+                    l = l + 1
+                end
+
+                island:Add(pair)
+                k = k + 1
+            end
+
+            islands:Add(island)
+            i = i + 1
+        end
+
+        return islands
     end
 end
