@@ -44,7 +44,7 @@ class Main
     end
 
     action ProcessFeatures(JavaScriptObjectNotation features)
-        JavaScriptObjectNotation theStates = features:Get(0)
+        JavaScriptObjectNotation theStates = features:GetArray()
         i = 0
         repeat while i < theStates:GetSize()
             JavaScriptObjectNotation state = theStates:Get(i)
@@ -119,7 +119,7 @@ class Main
         boolean isX = true
         number x = 0
         number y = 0
-        JavaScriptObjectNotation starting = coordinates:Get(0)
+        JavaScriptObjectNotation starting = coordinates:GetArray()
         i = 0
         repeat while i < starting:GetSize()
             JavaScriptObjectNotation prop = starting:Get(i)
@@ -165,7 +165,7 @@ class Main
         boolean isX = true
         number x = 0
         number y = 0
-        JavaScriptObjectNotation starting = coordinates:Get(0)
+        JavaScriptObjectNotation starting = coordinates:GetArray()
         i = 0
         repeat while i < starting:GetSize()
             JavaScriptObjectNotation prop = starting:Get(i)
